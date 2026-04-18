@@ -90,13 +90,80 @@
   .pill-neu{background:#f3f4f6;color:var(--secondary)}
   .hint{font-size:10px;color:var(--light);margin-top:6px;text-align:right}
   .widget-insight{
+    display:none;
+    align-items:center;
+    gap:10px;
+    margin:10px 14px 8px 14px;
+    padding:10px 12px;
+    border-radius:10px;
     font-size:12px;
-    color:var(--muted);
-    padding:10px 14px 0 14px;
     line-height:1.35;
+    font-weight:500;
+    border:1px solid transparent;
   }
   .widget-insight.kpi{
-    padding-bottom:4px;
+    margin-bottom:6px;
+  }
+  .widget-insight .insight-icon{
+    width:22px;
+    height:22px;
+    min-width:22px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:700;
+  }
+  .widget-insight .insight-text{
+    flex:1;
+  }
+  .widget-insight .insight-badge{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.3px;
+    padding:4px 8px;
+    border-radius:999px;
+    text-transform:uppercase;
+  }
+  .widget-insight.good{
+    background:#edf7f1;
+    border-color:#cfe9d8;
+    color:#166534;
+  }
+  .widget-insight.good .insight-icon{
+    background:#22c55e;
+    color:#fff;
+  }
+  .widget-insight.good .insight-badge{
+    background:#dff3e7;
+    color:#166534;
+  }
+  .widget-insight.watch{
+    background:#fff7e8;
+    border-color:#f6dfad;
+    color:#92400e;
+  }
+  .widget-insight.watch .insight-icon{
+    background:#f59e0b;
+    color:#fff;
+  }
+  .widget-insight.watch .insight-badge{
+    background:#fef0c7;
+    color:#92400e;
+  }
+  .widget-insight.action{
+    background:#fef0f0;
+    border-color:#f5c2c7;
+    color:#b42318;
+  }
+  .widget-insight.action .insight-icon{
+    background:#ef4444;
+    color:#fff;
+  }
+  .widget-insight.action .insight-badge{
+    background:#fde2e4;
+    color:#b42318;
   }
 </style>
 </head>
@@ -116,7 +183,7 @@
   <section class="widget w-4">
     <h2><span><span class="order">01</span>&nbsp;&nbsp;Active Users</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of users actively using Leo in the latest week. A snapshot of current engagement and whether adoption is spreading inside the account.">?</span><span class="tag">KPI</span></span></h2>
     <div class="body" data-drill="active_users">
-      <div class="widget-insight kpi" id="activeUsersInsight"></div>
+      <div class="widget-insight kpi" id="activeUsersInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div>
       <div class="kpi-number"><span id="kpiActive">—</span> / <span id="kpiTotal">—</span> = <span id="activePct">—</span>%</div>
       <div class="kpi-sub">Active users in latest week</div>
       <div id="kpiDelta" class="kpi-delta flat">— WoW</div>
@@ -132,7 +199,7 @@
   <section class="widget w-4">
     <h2><span><span class="order">02</span>&nbsp;&nbsp;Account Health</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Three at-a-glance risk signals: users with declining usage, users who rely heavily on Part Search without advanced features, and users who haven't reached value by Week 2.">?</span><span class="tag">TEXT</span></span></h2>
     <div class="body nonclick">
-      <div class="widget-insight kpi" id="accountHealthInsight"></div>
+      <div class="widget-insight kpi" id="accountHealthInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div>
       <ul class="health-list">
         <li id="hDecl"  data-drill="health_declining"><span class="label">Declining usage vs last week</span><span class="count" id="hDeclCount">—</span></li>
         <li id="hPart"  data-drill="health_part"><span class="label">High Part Search, low usage of advanced features</span><span class="count" id="hPartCount">—</span></li>
@@ -144,57 +211,57 @@
 
   <section class="widget w-4">
     <h2><span><span class="order">03</span>&nbsp;&nbsp;Query Growth</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Week-over-week change in total queries. Positive = deepening usage; flat or negative = stalling engagement and a signal to intervene.">?</span><span class="tag">LINE</span></span></h2>
-    <div class="body" data-drill="query_growth"><div class="widget-insight" id="queryGrowthInsight"></div><div class="chart-wrap"><canvas id="chartQueryGrowth"></canvas></div></div>
+    <div class="body" data-drill="query_growth"><div class="widget-insight" id="queryGrowthInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartQueryGrowth"></canvas></div></div>
   </section>
 
   <section class="widget w-6">
     <h2><span><span class="order">04</span>&nbsp;&nbsp;Retention Curve</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Percent of users still active each week since onboarding. The shape shows where users fall off and where usage stabilizes into a habit.">?</span><span class="tag">LINE</span></span></h2>
-    <div class="body" data-drill="retention_curve"><div class="widget-insight" id="retentionCurveInsight"></div><div class="chart-wrap"><canvas id="chartRetention"></canvas></div></div>
+    <div class="body" data-drill="retention_curve"><div class="widget-insight" id="retentionCurveInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartRetention"></canvas></div></div>
   </section>
 
   <section class="widget w-6">
     <h2><span><span class="order">05</span>&nbsp;&nbsp;Retention Drop-Off</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Users who went from active to inactive between consecutive weeks. Highlights the exact weeks where engagement breaks so CS can intervene.">?</span><span class="tag">BAR</span></span></h2>
-    <div class="body" data-drill="churn"><div class="widget-insight" id="churnInsight"></div><div class="chart-wrap"><canvas id="chartChurn"></canvas></div></div>
+    <div class="body" data-drill="churn"><div class="widget-insight" id="churnInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartChurn"></canvas></div></div>
   </section>
 
   <section class="widget w-12">
     <h2><span><span class="order">06</span>&nbsp;&nbsp;Retention by Value Type</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Retention rate broken down by the first value a user achieved — Creation, Quality, or Efficiency. Reveals which value paths produce sticky users.">?</span><span class="tag">H-BAR · 3 ROWS</span></span></h2>
-    <div class="body" data-drill="ret_value"><div class="widget-insight" id="retValueInsight"></div><div class="chart-wrap"><canvas id="chartRetValue"></canvas></div></div>
+    <div class="body" data-drill="ret_value"><div class="widget-insight" id="retValueInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartRetValue"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">07</span>&nbsp;&nbsp;Feature Adoption — First Week</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of queries by feature type during Week 1. Shows what users actually try first and where onboarding is steering them.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="fa_first"><div class="widget-insight" id="featFirstInsight"></div><div class="chart-wrap"><canvas id="chartFeatFirst"></canvas></div></div>
+    <div class="body" data-drill="fa_first"><div class="widget-insight" id="featFirstInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartFeatFirst"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">08</span>&nbsp;&nbsp;Feature Adoption — Last Week</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of queries by feature type in the latest week. Compare to Week 1 to see whether users have progressed into deeper, higher-value features.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="fa_last"><div class="widget-insight" id="featLastInsight"></div><div class="chart-wrap"><canvas id="chartFeatLast"></canvas></div></div>
+    <div class="body" data-drill="fa_last"><div class="widget-insight" id="featLastInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartFeatLast"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">09</span>&nbsp;&nbsp;Feature Adoption — All Time</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Feature-mix across the full data window. The steady-state picture of how the account uses Leo overall.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="fa_all"><div class="widget-insight" id="featAllInsight"></div><div class="chart-wrap"><canvas id="chartFeatAll"></canvas></div></div>
+    <div class="body" data-drill="fa_all"><div class="widget-insight" id="featAllInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartFeatAll"></canvas></div></div>
   </section>
 
   <section class="widget w-12">
     <h2><span><span class="order">10</span>&nbsp;&nbsp;Time to Value Distribution</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="How long users take to reach their first value event, bucketed (First Week, Week 2, Week 3, Later, No Value). Faster buckets correlate with retention.">?</span><span class="tag">H-BAR · 5 BUCKETS</span></span></h2>
-    <div class="body" data-drill="ttv_dist"><div class="widget-insight" id="ttvDistInsight"></div><div class="chart-wrap"><canvas id="chartTTVdist"></canvas></div></div>
+    <div class="body" data-drill="ttv_dist"><div class="widget-insight" id="ttvDistInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartTTVdist"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">11</span>&nbsp;&nbsp;TTV — Creation</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution limited to users whose first value was Creation (e.g., CAD generation). Shows how fast creators get productive.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="ttv_creation"><div class="widget-insight" id="ttvCreationInsight"></div><div class="chart-wrap"><canvas id="chartTTVcreation"></canvas></div></div>
+    <div class="body" data-drill="ttv_creation"><div class="widget-insight" id="ttvCreationInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartTTVcreation"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">12</span>&nbsp;&nbsp;TTV — Quality</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution for users whose first value was Quality (e.g., CAD inspection). Shows how fast quality-oriented users reach value.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="ttv_quality"><div class="widget-insight" id="ttvQualityInsight"></div><div class="chart-wrap"><canvas id="chartTTVquality"></canvas></div></div>
+    <div class="body" data-drill="ttv_quality"><div class="widget-insight" id="ttvQualityInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartTTVquality"></canvas></div></div>
   </section>
 
   <section class="widget w-4">
     <h2><span><span class="order">13</span>&nbsp;&nbsp;TTV — Efficiency</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution for users whose first value was Efficiency (e.g., Q&A, Part Search). Shows how fast efficiency seekers reach value.">?</span><span class="tag">H-BAR</span></span></h2>
-    <div class="body" data-drill="ttv_efficiency"><div class="widget-insight" id="ttvEfficiencyInsight"></div><div class="chart-wrap"><canvas id="chartTTVefficiency"></canvas></div></div>
+    <div class="body" data-drill="ttv_efficiency"><div class="widget-insight" id="ttvEfficiencyInsight"><span class="insight-icon"></span><span class="insight-text"></span><span class="insight-badge"></span></div><div class="chart-wrap"><canvas id="chartTTVefficiency"></canvas></div></div>
   </section>
 </main>
 
@@ -734,181 +801,148 @@ function bucketLabelToSpeed(bucket){
 }
 function generateInsights(DATA){
   const insights = {
-    activeUsersInsight: '',
-    accountHealthInsight: '',
-    queryGrowthInsight: '',
-    retentionCurveInsight: '',
-    churnInsight: '',
-    retValueInsight: '',
-    featFirstInsight: '',
-    featLastInsight: '',
-    featAllInsight: '',
-    ttvDistInsight: '',
-    ttvCreationInsight: '',
-    ttvQualityInsight: '',
-    ttvEfficiencyInsight: ''
+    activeUsersInsight: { text:'', tone:'' },
+    accountHealthInsight: { text:'', tone:'' },
+    queryGrowthInsight: { text:'', tone:'' },
+    retentionCurveInsight: { text:'', tone:'' },
+    churnInsight: { text:'', tone:'' },
+    retValueInsight: { text:'', tone:'' },
+    featFirstInsight: { text:'', tone:'' },
+    featLastInsight: { text:'', tone:'' },
+    featAllInsight: { text:'', tone:'' },
+    ttvDistInsight: { text:'', tone:'' },
+    ttvCreationInsight: { text:'', tone:'' },
+    ttvQualityInsight: { text:'', tone:'' },
+    ttvEfficiencyInsight: { text:'', tone:'' }
   };
   if (!DATA) return insights;
-  // 1. Active Users
+
   const activePct = DATA.kpi?.active_pct;
   if (typeof activePct === 'number') {
-    if (activePct >= 70) {
-      insights.activeUsersInsight = 'Strong adoption this week across the account.';
-    } else if (activePct >= 40) {
-      insights.activeUsersInsight = 'Adoption is moderate, with room to expand usage.';
-    } else {
-      insights.activeUsersInsight = 'Adoption is still limited across the account.';
-    }
+    if (activePct >= 70) insights.activeUsersInsight = { text:'Strong adoption this week across the account.', tone:'good' };
+    else if (activePct >= 40) insights.activeUsersInsight = { text:'Adoption is moderate, with room to expand usage.', tone:'watch' };
+    else insights.activeUsersInsight = { text:'Adoption is still limited across the account.', tone:'action' };
   }
-  // 2. Account Health
+
   const riskUsers = new Set([
     ...(DATA.account_health?.declining?.users || []),
     ...(DATA.account_health?.part_search_heavy?.users || []),
     ...(DATA.account_health?.no_value_after_w2?.users || [])
   ]);
   const totalRisk = riskUsers.size;
-  if (totalRisk === 0) {
-    insights.accountHealthInsight = 'No major risk signals detected this week.';
-  } else if (totalRisk <= 3) {
-    insights.accountHealthInsight = 'A few users show early risk signals.';
-  } else {
-    insights.accountHealthInsight = 'Multiple users show risk signals and may need follow-up.';
-  }
-  // 3. Query Growth
+  if (totalRisk === 0) insights.accountHealthInsight = { text:'No major risk signals detected this week.', tone:'good' };
+  else if (totalRisk <= 3) insights.accountHealthInsight = { text:'A few users show early risk signals.', tone:'watch' };
+  else insights.accountHealthInsight = { text:'Multiple users show risk signals and may need follow-up.', tone:'action' };
+
   const deltaPct = DATA.kpi?.delta_pct;
   if (typeof deltaPct === 'number') {
-    if (deltaPct > 10) {
-      insights.queryGrowthInsight = 'Usage momentum is increasing week over week.';
-    } else if (deltaPct < -10) {
-      insights.queryGrowthInsight = 'Usage declined week over week.';
-    } else {
-      insights.queryGrowthInsight = 'Usage is relatively stable week over week.';
-    }
+    if (deltaPct > 10) insights.queryGrowthInsight = { text:'Usage momentum is increasing week over week.', tone:'good' };
+    else if (deltaPct < -10) insights.queryGrowthInsight = { text:'Usage declined week over week.', tone:'action' };
+    else insights.queryGrowthInsight = { text:'Usage is relatively stable week over week.', tone:'watch' };
   }
-  // 4. Retention Curve
+
   const retention = DATA.retention_curve || [];
   if (retention.length >= 2) {
     const first = retention[0]?.retention_pct ?? null;
     const last = retention[retention.length - 1]?.retention_pct ?? null;
     if (typeof first === 'number' && typeof last === 'number') {
       const drop = first - last;
-      if (drop <= 20) {
-        insights.retentionCurveInsight = 'Retention remains relatively stable over time.';
-      } else {
-        insights.retentionCurveInsight = 'Most retention loss happens early in the journey.';
-      }
+      if (drop <= 20) insights.retentionCurveInsight = { text:'Retention remains relatively stable over time.', tone:'good' };
+      else insights.retentionCurveInsight = { text:'Most retention loss happens early in the journey.', tone:'watch' };
     }
   }
-  // 5. Retention Drop-Off
+
   const churnArr = DATA.churn || [];
   const recentChurn = churnArr.slice(-3);
   const totalChurn = sum(recentChurn.map(x => x?.churned_users || 0));
   if (recentChurn.length) {
-    if (totalChurn === 0) {
-      insights.churnInsight = 'No meaningful recent drop-off detected.';
-    } else if (totalChurn <= 3) {
-      insights.churnInsight = 'A few users disengaged in recent weeks.';
-    } else {
-      insights.churnInsight = 'Recent drop-off is concentrated across several weeks.';
-    }
+    if (totalChurn === 0) insights.churnInsight = { text:'No meaningful recent drop-off detected.', tone:'good' };
+    else if (totalChurn <= 3) insights.churnInsight = { text:'A few users disengaged in recent weeks.', tone:'watch' };
+    else insights.churnInsight = { text:'Recent drop-off is concentrated across several weeks.', tone:'action' };
   }
-  // 6. Retention by Value Type
+
   const bestValueType = safeMaxEntry(DATA.retention_by_value_type || {});
   if (bestValueType) {
-    if (bestValueType[1] === 0) {
-      insights.retValueInsight = 'Retention is still too limited to compare value types.';
-    } else {
-      insights.retValueInsight = `${bestValueType[0]} users show the strongest retention.`;
-    }
+    if (bestValueType[1] === 0) insights.retValueInsight = { text:'Retention is still too limited to compare value types.', tone:'watch' };
+    else insights.retValueInsight = { text:`${bestValueType[0]} users show the strongest retention.`, tone:'good' };
   }
-  // 7. Feature Adoption — First Week
+
   const topFeatFirst = safeMaxEntry(DATA.feature_adoption_first || {});
-  if (topFeatFirst) {
-    if (topFeatFirst[1] === 0) {
-      insights.featFirstInsight = '';
-    } else {
-      insights.featFirstInsight = `${topFeatFirst[0]} leads early onboarding usage.`;
-    }
-  }
-  // 8. Feature Adoption — Last Week
+  if (topFeatFirst && topFeatFirst[1] !== 0) insights.featFirstInsight = { text:`${topFeatFirst[0]} leads early onboarding usage.`, tone:'good' };
+
   const topFeatLast = safeMaxEntry(DATA.feature_adoption_last || {});
-  if (topFeatLast) {
-    if (topFeatLast[1] === 0) {
-      insights.featLastInsight = '';
-    } else {
-      insights.featLastInsight = `${topFeatLast[0]} is the most used feature in the latest week.`;
-    }
-  }
-  // 9. Feature Adoption — All Time
+  if (topFeatLast && topFeatLast[1] !== 0) insights.featLastInsight = { text:`${topFeatLast[0]} is the most used feature in the latest week.`, tone:'good' };
+
   const topFeatAll = safeMaxEntry(DATA.feature_adoption_all || {});
-  if (topFeatAll) {
-    if (topFeatAll[1] === 0) {
-      insights.featAllInsight = '';
-    } else {
-      insights.featAllInsight = `${topFeatAll[0]} drives the largest share of long-term usage.`;
-    }
-  }
-  // 10. TTV Distribution
+  if (topFeatAll && topFeatAll[1] !== 0) insights.featAllInsight = { text:`${topFeatAll[0]} drives the largest share of long-term usage.`, tone:'good' };
+
   const ttv = DATA.ttv_distribution || {};
   const early = (ttv['First Week'] || 0) + (ttv['Week 2'] || 0);
   const late = (ttv['Week 3'] || 0) + (ttv['3+ Weeks'] || 0) + (ttv['No Value'] || 0);
   if (Object.keys(ttv).length) {
-    if (early > late) {
-      insights.ttvDistInsight = 'Most users reach value quickly.';
-    } else {
-      insights.ttvDistInsight = 'Time to value is skewed toward later weeks.';
-    }
+    if (early > late) insights.ttvDistInsight = { text:'Most users reach value quickly.', tone:'good' };
+    else insights.ttvDistInsight = { text:'Time to value is skewed toward later weeks.', tone:'watch' };
   }
-  // 11. TTV — Creation
+
   const topCreation = safeMaxEntry(DATA.ttv_creation || {});
-  if (topCreation) {
-    if (topCreation[1] === 0) {
-      insights.ttvCreationInsight = '';
-    } else if (topCreation[0] === 'First Week' || topCreation[0] === 'Week 2') {
-      insights.ttvCreationInsight = 'Creation value is reached relatively quickly.';
-    } else if (topCreation[0] === 'No Value') {
-      insights.ttvCreationInsight = 'Creation value is not being reached consistently.';
-    } else {
-      insights.ttvCreationInsight = 'Creation value tends to appear later in the journey.';
-    }
+  if (topCreation && topCreation[1] !== 0) {
+    if (topCreation[0] === 'First Week' || topCreation[0] === 'Week 2') insights.ttvCreationInsight = { text:'Creation value is reached relatively quickly.', tone:'good' };
+    else if (topCreation[0] === 'No Value') insights.ttvCreationInsight = { text:'Creation value is not being reached consistently.', tone:'action' };
+    else insights.ttvCreationInsight = { text:'Creation value tends to appear later in the journey.', tone:'watch' };
   }
-  // 12. TTV — Quality
+
   const topQuality = safeMaxEntry(DATA.ttv_quality || {});
-  if (topQuality) {
-    if (topQuality[1] === 0) {
-      insights.ttvQualityInsight = '';
-    } else if (topQuality[0] === 'First Week' || topQuality[0] === 'Week 2') {
-      insights.ttvQualityInsight = 'Quality value is reached relatively quickly.';
-    } else if (topQuality[0] === 'No Value') {
-      insights.ttvQualityInsight = 'Quality value is not being reached consistently.';
-    } else {
-      insights.ttvQualityInsight = 'Quality value tends to appear later in the journey.';
-    }
+  if (topQuality && topQuality[1] !== 0) {
+    if (topQuality[0] === 'First Week' || topQuality[0] === 'Week 2') insights.ttvQualityInsight = { text:'Quality value is reached relatively quickly.', tone:'good' };
+    else if (topQuality[0] === 'No Value') insights.ttvQualityInsight = { text:'Quality value is not being reached consistently.', tone:'action' };
+    else insights.ttvQualityInsight = { text:'Quality value tends to appear later in the journey.', tone:'watch' };
   }
-  // 13. TTV — Efficiency
+
   const topEfficiency = safeMaxEntry(DATA.ttv_efficiency || {});
-  if (topEfficiency) {
-    if (topEfficiency[1] === 0) {
-      insights.ttvEfficiencyInsight = '';
-    } else if (topEfficiency[0] === 'First Week' || topEfficiency[0] === 'Week 2') {
-      insights.ttvEfficiencyInsight = 'Efficiency value is reached relatively quickly.';
-    } else if (topEfficiency[0] === 'No Value') {
-      insights.ttvEfficiencyInsight = 'Efficiency value is not being reached consistently.';
-    } else {
-      insights.ttvEfficiencyInsight = 'Efficiency value tends to appear later in the journey.';
-    }
+  if (topEfficiency && topEfficiency[1] !== 0) {
+    if (topEfficiency[0] === 'First Week' || topEfficiency[0] === 'Week 2') insights.ttvEfficiencyInsight = { text:'Efficiency value is reached relatively quickly.', tone:'good' };
+    else if (topEfficiency[0] === 'No Value') insights.ttvEfficiencyInsight = { text:'Efficiency value is not being reached consistently.', tone:'action' };
+    else insights.ttvEfficiencyInsight = { text:'Efficiency value tends to appear later in the journey.', tone:'watch' };
   }
+
   return insights;
 }
 function renderInsights(insights){
-  Object.entries(insights).forEach(([id, text]) => {
+  Object.entries(insights).forEach(([id, value]) => {
     const el = document.getElementById(id);
     if (!el) return;
+
+    const textEl = el.querySelector('.insight-text');
+    const iconEl = el.querySelector('.insight-icon');
+    const badgeEl = el.querySelector('.insight-badge');
+
+    const text = value?.text || '';
+    const tone = value?.tone || '';
+
+    el.classList.remove('good', 'watch', 'action');
+
     if (!text) {
       el.style.display = 'none';
+      if (textEl) textEl.textContent = '';
+      if (iconEl) iconEl.textContent = '';
+      if (badgeEl) badgeEl.textContent = '';
+      return;
+    }
+
+    el.style.display = 'flex';
+    el.classList.add(tone || 'watch');
+
+    if (textEl) textEl.textContent = text;
+
+    if (tone === 'good') {
+      if (iconEl) iconEl.textContent = '✓';
+      if (badgeEl) badgeEl.textContent = 'GOOD';
+    } else if (tone === 'action') {
+      if (iconEl) iconEl.textContent = '!';
+      if (badgeEl) badgeEl.textContent = 'ACTION';
     } else {
-      el.style.display = 'block';
-      el.textContent = text;
+      if (iconEl) iconEl.textContent = '!';
+      if (badgeEl) badgeEl.textContent = 'WATCH';
     }
   });
 }
