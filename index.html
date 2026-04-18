@@ -29,61 +29,23 @@
   .widget{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
   .widget h2{margin:0;background:var(--primary);color:#fff;padding:10px 14px;font-size:13px;font-weight:600;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center}
   .widget h2 .tag{background:var(--secondary);color:#e5e7eb;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.3px}
-  .widget h2 .h2-right{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-  }
-
+  .widget h2 .h2-right{display:inline-flex;align-items:center;gap:8px}
   .widget h2 .info-icon{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:18px;
-    height:18px;
-    min-width:18px;
-    border-radius:50%;
-    background:rgba(255,255,255,.22);
-    color:#fff;
-    font-size:12px;
-    font-weight:700;
-    font-family:Arial,sans-serif;
-    cursor:pointer;
-    user-select:none;
-    line-height:1;
-    border:1px solid rgba(255,255,255,.35);
-    transition:background .15s ease, transform .15s ease;
+    display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;min-width:18px;border-radius:50%;
+    background:rgba(255,255,255,.22);color:#fff;font-size:12px;font-weight:700;
+    font-family:Arial,sans-serif;cursor:pointer;user-select:none;line-height:1;
+    border:1px solid rgba(255,255,255,.35);transition:background .15s ease, transform .15s ease;
   }
-
   .widget h2 .info-icon:hover,
-  .widget h2 .info-icon:focus{
-    background:rgba(255,255,255,.4);
-    transform:scale(1.06);
-    outline:none;
-  }
-
+  .widget h2 .info-icon:focus{background:rgba(255,255,255,.4);transform:scale(1.06);outline:none}
   .info-tooltip{
-    position:fixed;
-    z-index:10000;
-    max-width:260px;
-    background:#111827;
-    color:#fff;
-    padding:8px 10px;
-    font-size:12px;
-    line-height:1.45;
-    border-radius:6px;
-    box-shadow:0 4px 14px rgba(0,0,0,.25);
-    pointer-events:none;
-    opacity:0;
-    transform:translateY(2px);
-    transition:opacity .12s ease,transform .12s ease;
-    white-space:normal;
+    position:fixed;z-index:10000;max-width:260px;background:#111827;color:#fff;
+    padding:8px 10px;font-size:12px;line-height:1.45;border-radius:6px;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;opacity:0;
+    transform:translateY(2px);transition:opacity .12s ease,transform .12s ease;white-space:normal;
   }
-
-  .info-tooltip.visible{
-    opacity:1;
-    transform:translateY(0);
-  }
+  .info-tooltip.visible{opacity:1;transform:translateY(0)}
   .widget .body{padding:14px;flex:1;min-height:0;cursor:pointer}
   .widget .body.nonclick{cursor:default}
   .kpi-number{font-size:44px;font-weight:700;line-height:1;color:var(--primary)}
@@ -241,6 +203,10 @@
 let DATA = null;
 let RAW = [];
 
+function emptyHealthGroup() {
+  return { users: [], count: 0 };
+}
+
 function buildDataFromRecords(records) {
   const FIELD_ALIASES = {
     user_id:                ['user_id','User ID','user id','userId','UserID','User'],
@@ -260,6 +226,7 @@ function buildDataFromRecords(records) {
     is_active_user:         ['is_active_user','Is Active User','is active user','Active','is_active'],
     is_retained:            ['is_retained','Is Retained','is retained','Retained'],
   };
+
   function pick(f, canonical) {
     const aliases = FIELD_ALIASES[canonical] || [canonical];
     for (const a of aliases) {
@@ -267,6 +234,7 @@ function buildDataFromRecords(records) {
     }
     return undefined;
   }
+
   const num  = v => (v === null || v === undefined || v === '' || isNaN(+v)) ? 0 : +v;
   const str  = v => (v === null || v === undefined) ? '' : String(v);
   const b01  = v => {
@@ -305,10 +273,9 @@ function buildDataFromRecords(records) {
       account:'NVIDIA', max_week:0, weeks:[], all_users:[],
       kpi:{current_active_users:0, previous_active_users:0, total_users:0, active_pct:0, delta_pct:0, active_latest_ids:[]},
       account_health:{
-        no_value_after_w2:{users:[],count:0},
-        declining:{users:[],count:0},
-        high_growth_retained:{users:[],count:0},
-        active_no_value:{users:[],count:0},
+        declining: emptyHealthGroup(),
+        part_search_heavy: emptyHealthGroup(),
+        no_value_after_w2: emptyHealthGroup(),
       },
       query_growth:{weeks:[], per_user:{}, avg:[]},
       retention_curve:[], churn:[],
@@ -350,15 +317,13 @@ function buildDataFromRecords(records) {
   const previousActive  = prev.filter(r => r.is_active_user === 1).length;
   const totalUsers      = USERS.length || 1;
   const activePct       = Math.round(1000 * currentActive / totalUsers) / 10;
-  const deltaPct        = previousActive > 0
-    ? Math.round(1000 * (currentActive - previousActive) / previousActive) / 10
-    : 0;
+  const deltaPct        = previousActive > 0 ? Math.round(1000 * (currentActive - previousActive) / previousActive) / 10 : 0;
 
   const declining = USERS.filter(u => {
     const l = latest.find(r => r.user_id === u);
-    if (!l) return false;
-    return l.query_growth_pct < 0;
+    return !!l && l.query_growth_pct < 0;
   });
+
   const partSearchHeavy = USERS.filter(u => {
     const l = latest.find(r => r.user_id === u);
     if (!l || !l.total_queries) return false;
@@ -366,9 +331,10 @@ function buildDataFromRecords(records) {
     const advShare = (l.cad_generation_queries + l.cad_inspection_queries) / l.total_queries;
     return psShare >= 0.40 && advShare < 0.30;
   });
+
   const noValueAfterW2 = USERS.filter(u => {
     const s = userSnap[u];
-    return (s.time_to_value_bucket === 'No Value') || (s.first_value_week > 2);
+    return !!s && ((s.time_to_value_bucket === 'No Value') || (s.first_value_week > 2));
   });
 
   const qgUsers = activeLatestIds.slice();
@@ -404,14 +370,14 @@ function buildDataFromRecords(records) {
 
   const rbvUsers = { Quality: [], Creation: [], Efficiency: [] };
   USERS.forEach(u => {
-    const vt = userSnap[u].value_type;
-    if (rbvUsers[vt]) rbvUsers[vt].push(u);
+    const vt = userSnap[u]?.value_type;
+    if (vt && rbvUsers[vt]) rbvUsers[vt].push(u);
   });
   const rbv = { Quality: 0, Creation: 0, Efficiency: 0 };
   Object.keys(rbvUsers).forEach(vt => {
     const ids = rbvUsers[vt];
     if (ids.length) {
-      const retained = ids.reduce((s, u) => s + (userSnap[u].is_retained || 0), 0);
+      const retained = ids.reduce((s, u) => s + (userSnap[u]?.is_retained || 0), 0);
       rbv[vt] = Math.round(1000 * retained / ids.length) / 10;
     }
   });
@@ -431,18 +397,19 @@ function buildDataFromRecords(records) {
     const cnt = {}, usrs = {};
     BUCKETS.forEach(b => { cnt[b] = 0; usrs[b] = []; });
     userList.forEach(u => {
-      const b = userSnap[u].time_to_value_bucket;
+      const b = userSnap[u]?.time_to_value_bucket;
       if (Object.prototype.hasOwnProperty.call(cnt, b)) { cnt[b]++; usrs[b].push(u); }
     });
     return { cnt, usrs };
   }
-  const all      = bucketCounts(USERS);
-  const totalBk  = USERS.length || 1;
-  const ttvDist  = {};
+
+  const all = bucketCounts(USERS);
+  const totalBk = USERS.length || 1;
+  const ttvDist = {};
   BUCKETS.forEach(b => { ttvDist[b] = Math.round(1000 * all.cnt[b] / totalBk) / 10; });
-  const creation   = bucketCounts(USERS.filter(u => userSnap[u].value_type === 'Creation'));
-  const quality    = bucketCounts(USERS.filter(u => userSnap[u].value_type === 'Quality'));
-  const efficiency = bucketCounts(USERS.filter(u => userSnap[u].value_type === 'Efficiency'));
+  const creation = bucketCounts(USERS.filter(u => userSnap[u]?.value_type === 'Creation'));
+  const quality = bucketCounts(USERS.filter(u => userSnap[u]?.value_type === 'Quality'));
+  const efficiency = bucketCounts(USERS.filter(u => userSnap[u]?.value_type === 'Efficiency'));
 
   return {
     account: 'NVIDIA',
@@ -458,36 +425,37 @@ function buildDataFromRecords(records) {
       active_latest_ids: activeLatestIds,
     },
     account_health: {
-      declining:           { users: declining,       count: declining.length },
-      part_search_heavy:   { users: partSearchHeavy, count: partSearchHeavy.length },
-      no_value_after_w2:   { users: noValueAfterW2,  count: noValueAfterW2.length },
+      declining: { users: declining, count: declining.length },
+      part_search_heavy: { users: partSearchHeavy, count: partSearchHeavy.length },
+      no_value_after_w2: { users: noValueAfterW2, count: noValueAfterW2.length },
     },
-    query_growth: { weeks: WEEKS, per_user: perUser, avg: avg },
+    query_growth: { weeks: WEEKS, per_user: perUser, avg },
     retention_curve: retentionCurve,
-    churn: churn,
+    churn,
     retention_by_value_type: rbv,
     retention_by_value_type_users: rbvUsers,
     feature_adoption_first: featShare(first1),
-    feature_adoption_last:  featShare(latest),
-    feature_adoption_all:   featShare(rows.filter(r => r.week_number > 1)),
+    feature_adoption_last: featShare(latest),
+    feature_adoption_all: featShare(rows.filter(r => r.week_number > 1)),
     ttv_buckets: BUCKETS,
     ttv_distribution: ttvDist,
     ttv_distribution_users: all.usrs,
-    ttv_creation:         creation.cnt,
-    ttv_creation_users:   creation.usrs,
-    ttv_quality:          quality.cnt,
-    ttv_quality_users:    quality.usrs,
-    ttv_efficiency:       efficiency.cnt,
+    ttv_creation: creation.cnt,
+    ttv_creation_users: creation.usrs,
+    ttv_quality: quality.cnt,
+    ttv_quality_users: quality.usrs,
+    ttv_efficiency: efficiency.cnt,
     ttv_efficiency_users: efficiency.usrs,
     raw_rows: rows,
   };
 }
+
 const P = {primary:'#1f2937', secondary:'#374151', light:'#9ca3af', grid:'#e5e7eb', pos:'#16a34a', neg:'#dc2626'};
 const FEAT_COLORS = {
-  'Q&A':            '#1f3b57',
+  'Q&A': '#1f3b57',
   'CAD Generation': '#4f7cac',
   'CAD Inspection': '#7fb3d5',
-  'Part Search':    '#a6c8e0'
+  'Part Search': '#a6c8e0'
 };
 
 const $ = id => document.getElementById(id);
@@ -500,7 +468,9 @@ function openModal(title, sub, rows, cols){
   rows.forEach(r => {
     html += '<tr>';
     cols.forEach(c => {
-      let v = r[c.key]; const style = c.fmt ? c.fmt(v, r) : ''; html += `<td>${style}</td>`;
+      const v = r[c.key];
+      const style = c.fmt ? c.fmt(v, r) : '';
+      html += `<td>${style}</td>`;
     });
     html += '</tr>';
   });
@@ -515,7 +485,8 @@ $('modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal
 
 const GROWTH_PCT_FMT = (v) => {
   if(v===null||v===undefined||isNaN(v)) return '<span class="pill pill-neu">—</span>';
-  const n = Number(v); const cls = n>0?'pill-pos':(n<0?'pill-neg':'pill-neu');
+  const n = Number(v);
+  const cls = n>0?'pill-pos':(n<0?'pill-neg':'pill-neu');
   return `<span class="pill ${cls}">${n.toFixed(1)}%</span>`;
 };
 const BOOL_FMT = (v) => `<span class="pill ${Number(v)?'pill-pos':'pill-neg'}">${Number(v)?'Yes':'No'}</span>`;
@@ -541,11 +512,11 @@ const COLS = [
 function filterRows(pred){ return RAW.filter(pred); }
 function filterByFeature(rows, category){
   switch(category){
-    case 'Q&A':            return rows.filter(r => (r.qa_queries||0) > 0);
+    case 'Q&A': return rows.filter(r => (r.qa_queries||0) > 0);
     case 'CAD Generation': return rows.filter(r => (r.cad_generation_queries||0) > 0);
     case 'CAD Inspection': return rows.filter(r => (r.cad_inspection_queries||0) > 0);
-    case 'Part Search':    return rows.filter(r => (r.part_search_queries||0) > 0);
-    default:               return rows;
+    case 'Part Search': return rows.filter(r => (r.part_search_queries||0) > 0);
+    default: return rows;
   }
 }
 function drill(kind, extra){
@@ -638,7 +609,8 @@ function drill(kind, extra){
         sub=`Week 1 rows where ${extra.category} > 0`;
         rows = filterByFeature(base, extra.category);
       } else {
-        title='Feature adoption — First Week'; sub='Week 1 rows';
+        title='Feature adoption — First Week';
+        sub='Week 1 rows';
         rows = base;
       }
       break;
@@ -650,7 +622,8 @@ function drill(kind, extra){
         sub=`Week ${maxW} rows where ${extra.category} > 0`;
         rows = filterByFeature(base, extra.category);
       } else {
-        title='Feature adoption — Last Week'; sub=`Week ${maxW} rows`;
+        title='Feature adoption — Last Week';
+        sub=`Week ${maxW} rows`;
         rows = base;
       }
       break;
@@ -662,7 +635,8 @@ function drill(kind, extra){
         sub=`Weeks > 1 where ${extra.category} > 0`;
         rows = filterByFeature(base, extra.category);
       } else {
-        title='Feature adoption — All Time'; sub='Weeks > 1';
+        title='Feature adoption — All Time';
+        sub='Weeks > 1';
         rows = base;
       }
       break;
@@ -672,30 +646,67 @@ function drill(kind, extra){
         title=`TTV distribution — ${extra.bucket}`;
         sub=`Users in ${extra.bucket}`;
         rows = filterRows(r => r.time_to_value_bucket===extra.bucket);
-        const seen = new Set(); rows = rows.filter(r => { if(seen.has(r.user_id)) return false; seen.add(r.user_id); return true; });
+        const seen = new Set();
+        rows = rows.filter(r => { if(seen.has(r.user_id)) return false; seen.add(r.user_id); return true; });
       } else {
-        rows = RAW; title='TTV distribution — all rows';
+        rows = RAW;
+        title='TTV distribution — all rows';
       }
       break;
     case 'ttv_creation':
     case 'ttv_quality':
-    case 'ttv_efficiency':
+    case 'ttv_efficiency': {
       const vt = {ttv_creation:'Creation',ttv_quality:'Quality',ttv_efficiency:'Efficiency'}[kind];
       if(extra && extra.bucket){
         title=`TTV · ${vt} — ${extra.bucket}`;
         sub=`value_type=${vt}, bucket=${extra.bucket}`;
         rows = filterRows(r => r.value_type===vt && r.time_to_value_bucket===extra.bucket);
       } else {
-        title=`TTV · ${vt}`; sub=`value_type=${vt}`;
+        title=`TTV · ${vt}`;
+        sub=`value_type=${vt}`;
         rows = filterRows(r => r.value_type===vt);
       }
       break;
+    }
   }
   openModal(title, sub, rows, COLS);
 }
 
+function initInfoTooltips(){
+  let tooltip = document.querySelector('.info-tooltip');
+  if(!tooltip){
+    tooltip = document.createElement('div');
+    tooltip.className = 'info-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  document.querySelectorAll('.info-icon').forEach(icon => {
+    const show = () => {
+      const text = icon.getAttribute('aria-label') || icon.dataset.tooltip || '';
+      if(!text) return;
+      tooltip.textContent = text;
+      tooltip.classList.add('visible');
+      const rect = icon.getBoundingClientRect();
+      requestAnimationFrame(() => {
+        const pad = 10;
+        const top = Math.max(pad, rect.top - tooltip.offsetHeight - 8);
+        let left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2;
+        left = Math.max(pad, Math.min(left, window.innerWidth - tooltip.offsetWidth - pad));
+        tooltip.style.top = `${top}px`;
+        tooltip.style.left = `${left}px`;
+      });
+    };
+    const hide = () => tooltip.classList.remove('visible');
+    icon.addEventListener('mouseenter', show);
+    icon.addEventListener('mouseleave', hide);
+    icon.addEventListener('focus', show);
+    icon.addEventListener('blur', hide);
+  });
+}
+
 function render() {
   RAW = DATA.raw_rows;
+
   document.querySelectorAll('[data-drill]').forEach(el => {
     el.addEventListener('click', (e) => {
       if(e.target.closest('canvas')) return;
@@ -710,12 +721,18 @@ function render() {
   $('kpiCurrent').textContent = DATA.kpi.current_active_users;
   $('kpiPrev').textContent = DATA.kpi.previous_active_users;
   $('activePct').textContent = DATA.kpi.active_pct.toFixed(1);
+
   const delta = DATA.kpi.delta_pct;
   const dEl = $('kpiDelta');
   dEl.textContent = (delta>0?'+':'') + delta.toFixed(1) + '% WoW';
   dEl.className = 'kpi-delta ' + (delta>0?'up':(delta<0?'down':'flat'));
 
-  const ah = DATA.account_health;
+  const ah = {
+    declining: DATA.account_health?.declining || emptyHealthGroup(),
+    part_search_heavy: DATA.account_health?.part_search_heavy || emptyHealthGroup(),
+    no_value_after_w2: DATA.account_health?.no_value_after_w2 || emptyHealthGroup(),
+  };
+
   const signalPaint = [
     ['hDecl',  'hDeclCount',  ah.declining.count],
     ['hPart',  'hPartCount',  ah.part_search_heavy.count],
@@ -723,14 +740,19 @@ function render() {
   ];
   signalPaint.forEach(([liId, cntId, n]) => {
     $(cntId).textContent = n;
+    $(liId).classList.remove('alert', 'clean');
     $(liId).classList.add(n > 0 ? 'alert' : 'clean');
   });
 
   function opts(yLabel, horiz){
     return {
-      responsive:true, maintainAspectRatio:false,
-      onClick: null,
-      plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:11},color:P.secondary}},tooltip:{backgroundColor:P.primary}},
+      responsive:true,
+      maintainAspectRatio:false,
+      onClick:null,
+      plugins:{
+        legend:{display:true,labels:{boxWidth:10,font:{size:11},color:P.secondary}},
+        tooltip:{backgroundColor:P.primary}
+      },
       scales: horiz ? {
         x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}},beginAtZero:true,title:{display:true,text:yLabel,color:P.light,font:{size:10}}},
         y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:11}}}
@@ -750,7 +772,9 @@ function render() {
       borderWidth:1.8, tension:.25, pointRadius:2
     }));
     datasets.push({label:'Average', data:qg.avg, borderColor:P.primary, backgroundColor:'transparent', borderWidth:2.5, borderDash:[6,4], tension:.25, pointRadius:3});
-    new Chart($('chartQueryGrowth'), {type:'line', data:{labels,datasets},
+    new Chart($('chartQueryGrowth'), {
+      type:'line',
+      data:{labels,datasets},
       options:{...opts('total_queries', false), onClick:(e,els,ch)=>{
         if(els.length){
           const el = els[0];
@@ -758,138 +782,78 @@ function render() {
           const series = ch.data.datasets[el.datasetIndex].label;
           drill('query_growth',{week:wk, series});
         } else drill('query_growth');
-      }}});
+      }}
+    });
   })();
 
   (() => {
     const r = DATA.retention_curve;
-    new Chart($('chartRetention'), {type:'line',
-      data:{labels:r.map(x=>'W'+x.week_number),
-            datasets:[{label:'Retention %', data:r.map(x=>x.retention_pct),
-                       borderColor:P.primary, backgroundColor:'rgba(31,41,55,.08)',
-                       borderWidth:2.5, tension:.25, pointRadius:3, fill:true}]},
-      options:{...opts('retention %', false),
-        scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:11}}},
-                y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:11}},min:0,max:100,title:{display:true,text:'retention %',color:P.light,font:{size:10}}}},
-        onClick:(e,els)=>{ if(els.length){ const wk = r[els[0].index].week_number; drill('retention_curve',{week:wk}); } else drill('retention_curve'); }}});
+    new Chart($('chartRetention'), {
+      type:'line',
+      data:{labels:r.map(x=>'W'+x.week_number),datasets:[{label:'Retention %', data:r.map(x=>x.retention_pct),borderColor:P.primary, backgroundColor:'rgba(31,41,55,.08)',borderWidth:2.5, tension:.25, pointRadius:3, fill:true}]},
+      options:{...opts('retention %', false),scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:11}}},y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:11}},min:0,max:100,title:{display:true,text:'retention %',color:P.light,font:{size:10}}}},onClick:(e,els)=>{ if(els.length){ const wk = r[els[0].index].week_number; drill('retention_curve',{week:wk}); } else drill('retention_curve'); }}
+    });
   })();
 
   (() => {
     const c = DATA.churn;
-    new Chart($('chartChurn'), {type:'bar',
-      data:{labels:c.map(x=>'W'+x.week_number),
-            datasets:[{label:'Churned users', data:c.map(x=>x.churned_users),
-                       backgroundColor:c.map(x=>x.churned_users>0?P.neg:P.secondary), borderRadius:4}]},
-      options:{...opts('churned users', false),
-        onClick:(e,els)=>{ if(els.length){ const wk = c[els[0].index].week_number; drill('churn',{week:wk}); } else drill('churn'); }}});
+    new Chart($('chartChurn'), {
+      type:'bar',
+      data:{labels:c.map(x=>'W'+x.week_number),datasets:[{label:'Churned users', data:c.map(x=>x.churned_users),backgroundColor:c.map(x=>x.churned_users>0?P.neg:P.secondary), borderRadius:4}]},
+      options:{...opts('churned users', false),onClick:(e,els)=>{ if(els.length){ const wk = c[els[0].index].week_number; drill('churn',{week:wk}); } else drill('churn'); }}
+    });
   })();
 
   (() => {
     const src = DATA.retention_by_value_type;
     const rows = Object.entries(src).sort((a,b)=>b[1]-a[1]);
-    new Chart($('chartRetValue'), {type:'bar',
-      data:{labels:rows.map(r=>r[0]),
-            datasets:[{label:'Retention %', data:rows.map(r=>r[1]),
-                       backgroundColor:P.primary, borderRadius:4}]},
-      options:{...opts('retention %', true), indexAxis:'y',
-        scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary},min:0,max:100,title:{display:true,text:'retention %',color:P.light,font:{size:10}}},
-                y:{grid:{color:P.grid},ticks:{color:P.secondary}}},
-        plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},
-        onClick:(e,els)=>{ if(els.length){ const t = rows[els[0].index][0]; drill('ret_value',{type:t}); } else drill('ret_value'); }}});
+    new Chart($('chartRetValue'), {
+      type:'bar',
+      data:{labels:rows.map(r=>r[0]),datasets:[{label:'Retention %', data:rows.map(r=>r[1]),backgroundColor:P.primary, borderRadius:4}]},
+      options:{...opts('retention %', true), indexAxis:'y',scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary},min:0,max:100,title:{display:true,text:'retention %',color:P.light,font:{size:10}}},y:{grid:{color:P.grid},ticks:{color:P.secondary}}},plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},onClick:(e,els)=>{ if(els.length){ const t = rows[els[0].index][0]; drill('ret_value',{type:t}); } else drill('ret_value'); }}
+    });
   })();
 
   function featChart(id, src, drillKind){
     const rows = Object.entries(src).sort((a,b)=>b[1]-a[1]);
     const labels = rows.map(r=>r[0]);
     const barColors = labels.map(lbl => FEAT_COLORS[lbl] || P.primary);
-    new Chart($(id), {type:'bar',
-      data:{labels,
-            datasets:[{label:'% of queries', data:rows.map(r=>+r[1].toFixed(1)),
-                       backgroundColor:barColors, borderRadius:4}]},
-      options:{...opts('% of queries', true), indexAxis:'y',
-        scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}},min:0,max:100,title:{display:true,text:'% of queries',color:P.light,font:{size:10}}},
-                y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}}}},
-        plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},
-        onClick:(e,els)=>{
-          if(els.length){
-            const category = labels[els[0].index];
-            drill(drillKind, {category});
-          } else {
-            drill(drillKind);
-          }
-        }}});
+    new Chart($(id), {
+      type:'bar',
+      data:{labels,datasets:[{label:'% of queries', data:rows.map(r=>+r[1].toFixed(1)),backgroundColor:barColors, borderRadius:4}]},
+      options:{...opts('% of queries', true), indexAxis:'y',scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}},min:0,max:100,title:{display:true,text:'% of queries',color:P.light,font:{size:10}}},y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}}}},plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},onClick:(e,els)=>{ if(els.length){ const category = labels[els[0].index]; drill(drillKind, {category}); } else { drill(drillKind); } }}
+    });
   }
   featChart('chartFeatFirst', DATA.feature_adoption_first, 'fa_first');
-  featChart('chartFeatLast',  DATA.feature_adoption_last,  'fa_last');
-  featChart('chartFeatAll',   DATA.feature_adoption_all,   'fa_all');
+  featChart('chartFeatLast', DATA.feature_adoption_last, 'fa_last');
+  featChart('chartFeatAll', DATA.feature_adoption_all, 'fa_all');
 
   (() => {
     const t = DATA.ttv_distribution;
     const order = DATA.ttv_buckets;
-    new Chart($('chartTTVdist'), {type:'bar',
-      data:{labels:order,
-            datasets:[{label:'% of users', data:order.map(k=>+(t[k]||0).toFixed(1)),
-                       backgroundColor:P.primary, borderRadius:4}]},
-      options:{...opts('% of users', true), indexAxis:'y',
-        scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}},min:0,max:100,title:{display:true,text:'% of users',color:P.light,font:{size:10}}},
-                y:{grid:{color:P.grid},ticks:{color:P.secondary.fontSize=10}}},
-        plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},
-        onClick:(e,els)=>{ if(els.length){ drill('ttv_dist',{bucket:order[els[0].index]}); } else drill('ttv_dist'); }}});
+    new Chart($('chartTTVdist'), {
+      type:'bar',
+      data:{labels:order,datasets:[{label:'% of users', data:order.map(k=>+(t[k]||0).toFixed(1)),backgroundColor:P.primary, borderRadius:4}]},
+      options:{...opts('% of users', true), indexAxis:'y',scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}},min:0,max:100,title:{display:true,text:'% of users',color:P.light,font:{size:10}}},y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}}}},plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},onClick:(e,els)=>{ if(els.length){ drill('ttv_dist',{bucket:order[els[0].index]}); } else drill('ttv_dist'); }}
+    });
   })();
 
   function ttvChart(id, src, drillKind){
     const order = DATA.ttv_buckets;
-    new Chart($(id), {type:'bar',
-      data:{labels:order,
-            datasets:[{label:'users', data:order.map(k=>src[k]||0),
-                       backgroundColor:P.primary, borderRadius:4}]},
-      options:{...opts('users', true), indexAxis:'y',
-        scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10},precision:0},beginAtZero:true,title:{display:true,text:'users',color:P.light,font:{size:10}}},
-                y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}}}},
-        plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},
-        onClick:(e,els)=>{ if(els.length){ drill(drillKind,{bucket:order[els[0].index]}); } else drill(drillKind); }}});
+    new Chart($(id), {
+      type:'bar',
+      data:{labels:order,datasets:[{label:'users', data:order.map(k=>src[k]||0),backgroundColor:P.primary, borderRadius:4}]},
+      options:{...opts('users', true), indexAxis:'y',scales:{x:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10},precision:0},beginAtZero:true,title:{display:true,text:'users',color:P.light,font:{size:10}}},y:{grid:{color:P.grid},ticks:{color:P.secondary,font:{size:10}}}},plugins:{legend:{display:false},tooltip:{backgroundColor:P.primary}},onClick:(e,els)=>{ if(els.length){ drill(drillKind,{bucket:order[els[0].index]}); } else drill(drillKind); }}
+    });
   }
-  ttvChart('chartTTVcreation',   DATA.ttv_creation,   'ttv_creation');
-  ttvChart('chartTTVquality',    DATA.ttv_quality,    'ttv_quality');
+  ttvChart('chartTTVcreation', DATA.ttv_creation, 'ttv_creation');
+  ttvChart('chartTTVquality', DATA.ttv_quality, 'ttv_quality');
   ttvChart('chartTTVefficiency', DATA.ttv_efficiency, 'ttv_efficiency');
 
   initInfoTooltips();
 }
 
 const LOCAL_FALLBACK = {"records":[]};
-
-function initInfoTooltips(){
-  let tooltip = document.querySelector('.info-tooltip');
-  if(!tooltip){
-    tooltip = document.createElement('div');
-    tooltip.className = 'info-tooltip';
-    document.body.appendChild(tooltip);
-  }
-
-  document.querySelectorAll('.info-icon').forEach(icon => {
-    const show = () => {
-      const text = icon.getAttribute('aria-label') || icon.dataset.tooltip || '';
-      if(!text) return;
-      tooltip.textContent = text;
-      tooltip.classList.add('visible');
-
-      const rect = icon.getBoundingClientRect();
-      requestAnimationFrame(() => {
-        const pad = 10;
-        const top = Math.max(pad, rect.top - tooltip.offsetHeight - 8);
-        let left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2;
-        left = Math.max(pad, Math.min(left, window.innerWidth - tooltip.offsetWidth - pad));
-        tooltip.style.top = `${top}px`;
-        tooltip.style.left = `${left}px`;
-      });
-    };
-    const hide = () => tooltip.classList.remove('visible');
-    icon.addEventListener('mouseenter', show);
-    icon.addEventListener('mouseleave', hide);
-    icon.addEventListener('focus', show);
-    icon.addEventListener('blur', hide);
-  });
-}
 
 (async function bootstrap(){
   try{
