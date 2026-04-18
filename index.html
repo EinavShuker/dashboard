@@ -79,6 +79,12 @@
   .modal header h3{margin:0;font-size:14px}
   .modal header button{background:transparent;border:1px solid #4b5563;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px}
   .modal .subhead{padding:10px 18px;border-bottom:1px solid var(--border);color:var(--muted);font-size:12px}
+.modal .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:#fbfcfe}
+  .modal .summary-card{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff}
+  .modal .summary-card .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .modal .summary-card .val{font-size:18px;font-weight:700;color:var(--primary);margin-top:4px}
+  .modal .summary-card .subval{font-size:12px;color:var(--muted);margin-top:2px}
+  @media(max-width:900px){.modal .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
   .modal .scroll{overflow:auto;padding:0}
   table.drill{width:100%;border-collapse:collapse;font-size:12px}
   table.drill th,table.drill td{border-bottom:1px solid var(--border);padding:8px 12px;text-align:left;white-space:nowrap}
@@ -537,23 +543,68 @@ const FEAT_COLORS = {
 };
 
 const $ = id => document.getElementById(id);
-function openModal(title, sub, rows, cols){
+
+function sortRows(rows, direction='asc'){
+  return [...(rows || [])].sort((a,b) => direction === 'desc' ? (b.week_number - a.week_number) : (a.week_number - b.week_number));
+}
+
+function buildSummaryCards(cards){
+  if (!cards || !cards.length) return '';
+  return `<div class="summary-grid">${cards.map(card => `
+    <div class="summary-card">
+      <div class="lbl">${card.label}</div>
+      <div class="val">${card.value}</div>
+      ${card.subvalue ? `<div class="subval">${card.subvalue}</div>` : ''}
+    </div>
+  `).join('')}</div>`;
+}
+
+function latestMeaningfulRow(rows){
+  const sorted = sortRows(rows, 'desc');
+  return sorted.find(r => (r.total_queries || 0) > 0) || sorted[0] || null;
+}
+
+function getUserJourneySummary(rows){
+  const sortedAsc = sortRows(rows, 'asc');
+  const sortedDesc = sortRows(rows, 'desc');
+  const latest = sortedDesc[0] || {};
+  const lastActiveRow = sortedDesc.find(r => Number(r.is_active_user) === 1 && (r.total_queries || 0) > 0);
+  const firstValueRow = sortedAsc.find(r => Number(r.value_event) === 1 || (r.first_value_week || 0) > 0);
+  return {
+    currentStatus: Number(latest.is_active_user) === 1 ? 'Active' : 'Inactive',
+    retained: Number(latest.is_retained) === 1 ? 'Retained' : 'Not retained',
+    lastActiveWeek: lastActiveRow ? `W${lastActiveRow.week_number}` : '—',
+    valueReached: firstValueRow ? 'Yes' : 'No',
+    valueType: latest.value_type || '—',
+    timeToValue: latest.time_to_value_bucket || '—',
+  };
+}
+
+function openModal(title, sub, rows, cols, options = {}){
+  const { summaryCards = [], emptyText = 'No matching rows.' } = options;
   $('modalTitle').textContent = title;
   $('modalSub').textContent = sub || '';
-  let html = '<table class="drill"><thead><tr>';
-  cols.forEach(c => html += `<th>${c.label}</th>`);
-  html += '</tr></thead><tbody>';
-  rows.forEach(r => {
-    html += '<tr>';
-    cols.forEach(c => {
-      const v = r[c.key];
-      const style = c.fmt ? c.fmt(v, r) : '';
-      html += `<td>${style}</td>`;
+
+  let html = buildSummaryCards(summaryCards);
+
+  if(!rows.length){
+    html += `<div style="padding:24px;color:#6b7280">${emptyText}</div>`;
+  } else {
+    html += '<table class="drill"><thead><tr>';
+    cols.forEach(c => html += `<th>${c.label}</th>`);
+    html += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr>';
+      cols.forEach(c => {
+        const v = r[c.key];
+        const style = c.fmt ? c.fmt(v, r) : TXT(v);
+        html += `<td>${style}</td>`;
+      });
+      html += '</tr>';
     });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  if(!rows.length) html = '<div style="padding:24px;color:#6b7280">No matching rows.</div>';
+    html += '</tbody></table>';
+  }
+
   $('modalBody').innerHTML = html;
   $('modal').classList.add('open');
 }
@@ -586,6 +637,15 @@ const COLS = [
   {key:'is_active_user', label:'Active', fmt:BOOL_FMT},
   {key:'is_retained', label:'Retained', fmt:BOOL_FMT},
 ];
+const COLS_COMPACT = [
+  COLS[0], COLS[1], COLS[2], COLS[3], COLS[8], COLS[9], COLS[12], COLS[13], COLS[14]
+];
+const COLS_RETENTION = [
+  COLS[0], COLS[1], COLS[10], COLS[11], COLS[12], COLS[13], COLS[14]
+];
+const COLS_FEATURE = [
+  COLS[0], COLS[1], COLS[2], COLS[4], COLS[5], COLS[6], COLS[7], COLS[8], COLS[13]
+];
 
 function filterRows(pred){ return RAW.filter(pred); }
 function filterByFeature(rows, category){
@@ -598,156 +658,258 @@ function filterByFeature(rows, category){
   }
 }
 function drill(kind, extra){
-  let title='Drill-down', sub='', rows=[];
+  let title='Drill-down', sub='', rows=[], cols=COLS, options={};
   const maxW = DATA.max_week;
+
   switch(kind){
-    case 'active_users':
+    case 'active_users': {
       title='Active users — latest week';
       sub=`is_active_user=1 AND total_queries>1, week ${maxW}`;
-      rows = filterRows(r => r.week_number===maxW && r.is_active_user===1 && r.total_queries>1);
+      rows = sortRows(filterRows(r => r.week_number===maxW && r.is_active_user===1 && r.total_queries>1), 'desc');
+      cols = [COLS[0], COLS[2], COLS[8], COLS[10], COLS[12], COLS[13], COLS[14]];
+      options.summaryCards = [
+        { label:'Active users', value:String(rows.length), subvalue:`Week ${maxW}` },
+        { label:'Total users', value:String(DATA.kpi.total_users) },
+        { label:'Adoption', value:`${DATA.kpi.active_pct.toFixed(1)}%` },
+        { label:'WoW change', value:`${DATA.kpi.delta_pct > 0 ? '+' : ''}${DATA.kpi.delta_pct.toFixed(1)}%` }
+      ];
       break;
+    }
     case 'health_declining': {
       title='Declining usage vs last week';
       const ids = DATA.account_health.declining.users;
       sub = ids.length ? `Users flagged: ${ids.join(', ')}` : 'No users flagged';
-      rows = filterRows(r => r.week_number===maxW && ids.includes(r.user_id));
+      rows = sortRows(filterRows(r => r.week_number===maxW && ids.includes(r.user_id)), 'desc');
+      cols = [COLS[0], COLS[2], COLS[3], COLS[8], COLS[10], COLS[13], COLS[14]];
+      options.summaryCards = [
+        { label:'Flagged users', value:String(ids.length) },
+        { label:'Latest week', value:`W${maxW}` },
+        { label:'Worst decline', value: rows.length ? `${Math.min(...rows.map(r => r.query_growth_pct)).toFixed(1)}%` : '—' }
+      ];
       break;
     }
     case 'health_part': {
       title='High Part Search, low usage of advanced features';
       const ids = DATA.account_health.part_search_heavy.users;
       sub = ids.length ? `Users flagged: ${ids.join(', ')}` : 'No users flagged';
-      rows = filterRows(r => r.week_number===maxW && ids.includes(r.user_id));
+      rows = sortRows(filterRows(r => r.week_number===maxW && ids.includes(r.user_id)), 'desc');
+      cols = [COLS[0], COLS[2], COLS[7], COLS[5], COLS[6], COLS[8], COLS[13]];
+      options.summaryCards = [
+        { label:'Flagged users', value:String(ids.length) },
+        { label:'Latest week', value:`W${maxW}` },
+        { label:'Signal', value:'Part Search heavy' }
+      ];
       break;
     }
     case 'health_novalue': {
       title='No value reached by Week 2';
       const ids = DATA.account_health.no_value_after_w2.users;
+      const focusUser = ids[0] || '';
       sub = ids.length ? `Users flagged: ${ids.join(', ')}` : 'No users flagged';
-      rows = filterRows(r => ids.includes(r.user_id));
+      rows = sortRows(filterRows(r => ids.includes(r.user_id)), 'asc');
+      cols = COLS_COMPACT;
+      if (focusUser) {
+        const focusRows = rows.filter(r => r.user_id === focusUser);
+        const s = getUserJourneySummary(focusRows);
+        options.summaryCards = [
+          { label:'User flagged', value:focusUser },
+          { label:'Current status', value:s.currentStatus, subvalue:s.retained },
+          { label:'Last active week', value:s.lastActiveWeek },
+          { label:'Value reached', value:s.valueReached, subvalue:s.timeToValue }
+        ];
+      } else {
+        options.summaryCards = [{ label:'Flagged users', value:String(ids.length) }];
+      }
       break;
     }
-    case 'query_growth':
+    case 'query_growth': {
+      cols = [COLS[0], COLS[1], COLS[2], COLS[3], COLS[8], COLS[10], COLS[13]];
       if(extra && extra.week && extra.series){
         if(extra.series === 'Average'){
           title=`Query growth — Average · W${extra.week}`;
-          sub=`Active users in W${extra.week} (is_active_user=1 AND total_queries>1)`;
-          rows = filterRows(r => r.week_number===extra.week && r.is_active_user===1 && r.total_queries>1);
+          sub=`Active users in W${extra.week}`;
+          rows = sortRows(filterRows(r => r.week_number===extra.week && r.is_active_user===1 && r.total_queries>1), 'desc');
+          options.summaryCards = [
+            { label:'Week', value:`W${extra.week}` },
+            { label:'Active users', value:String(rows.length) },
+            { label:'Avg queries', value: String(DATA.query_growth.avg[DATA.query_growth.weeks.indexOf(extra.week)] ?? '—') }
+          ];
         } else {
           title=`Query growth — ${extra.series} · W${extra.week}`;
           sub=`Row for ${extra.series} in W${extra.week}`;
-          rows = filterRows(r => r.week_number===extra.week && r.user_id===extra.series);
+          rows = sortRows(filterRows(r => r.week_number===extra.week && r.user_id===extra.series), 'desc');
+          options.summaryCards = [
+            { label:'User', value:extra.series },
+            { label:'Week', value:`W${extra.week}` },
+            { label:'Queries', value: rows[0] ? String(rows[0].total_queries) : '—' }
+          ];
         }
       } else if(extra && extra.week){
         title=`Query growth — W${extra.week}`;
         sub=`Active users in W${extra.week}`;
-        rows = filterRows(r => r.week_number===extra.week && r.is_active_user===1 && r.total_queries>1);
+        rows = sortRows(filterRows(r => r.week_number===extra.week && r.is_active_user===1 && r.total_queries>1), 'desc');
       } else {
         title='Query growth — active users';
         sub=`Weekly rows for ${DATA.kpi.active_latest_ids.join(', ')}`;
-        rows = filterRows(r => DATA.kpi.active_latest_ids.includes(r.user_id));
+        rows = sortRows(filterRows(r => DATA.kpi.active_latest_ids.includes(r.user_id)), 'asc');
       }
       break;
-    case 'retention_curve':
+    }
+    case 'retention_curve': {
+      cols = COLS_RETENTION;
       if(extra && extra.week){
         title=`Retention — Week ${extra.week}`;
-        sub=`Active users active in W${extra.week} from the Week 1 cohort`;
-        rows = filterRows(r => r.week_number===extra.week);
+        sub=`Week 1 cohort status in W${extra.week}`;
+        rows = filterRows(r => r.week_number===extra.week)
+          .sort((a,b) => Number(a.is_active_user) - Number(b.is_active_user) || Number(a.is_retained) - Number(b.is_retained) || a.user_id.localeCompare(b.user_id));
+        const activeCount = rows.filter(r => Number(r.is_active_user) === 1).length;
+        options.summaryCards = [
+          { label:'Week', value:`W${extra.week}` },
+          { label:'Active users', value:String(activeCount) },
+          { label:'Inactive users', value:String(rows.length - activeCount) },
+          { label:'Retention', value:`${rows.length ? ((activeCount / rows.length) * 100).toFixed(1) : '0.0'}%` }
+        ];
       } else {
         title='Retention curve — all rows';
-        rows = RAW.slice();
+        rows = sortRows(RAW.slice(), 'asc');
+        cols = COLS_RETENTION;
       }
       break;
-    case 'churn':
+    }
+    case 'churn': {
+      cols = [COLS[0], COLS[1], COLS[2], COLS[3], COLS[10], COLS[12], COLS[13], COLS[14]];
       if(extra && extra.week){
         title=`Churn — Week ${extra.week}`;
         const lost = (DATA.churn.find(c=>c.week_number===extra.week)||{}).users||[];
         sub = lost.length ? `Lost this week: ${lost.join(', ')}` : 'No churn this week';
-        rows = filterRows(r => r.week_number===extra.week && lost.includes(r.user_id));
+        rows = sortRows(filterRows(r => r.week_number===extra.week && lost.includes(r.user_id)), 'desc');
+        options.summaryCards = [
+          { label:'Week', value:`W${extra.week}` },
+          { label:'Churned users', value:String(lost.length) }
+        ];
       } else {
         title='Retention drop-off';
         const lostAll = DATA.churn.flatMap(c=>c.users);
-        rows = filterRows(r => lostAll.includes(r.user_id));
+        rows = sortRows(filterRows(r => lostAll.includes(r.user_id)), 'desc');
       }
       break;
-    case 'ret_value':
+    }
+    case 'ret_value': {
+      cols = COLS_RETENTION;
       if(extra && extra.type){
         title=`Retention — ${extra.type}`;
         const ids = (DATA.retention_by_value_type_users||{})[extra.type] || [];
         sub = `value_type = ${extra.type}; users: ${ids.join(', ')||'none'}`;
-        rows = filterRows(r => ids.includes(r.user_id));
+        rows = sortRows(filterRows(r => ids.includes(r.user_id)), 'asc');
+        options.summaryCards = [
+          { label:'Value type', value:extra.type },
+          { label:'Users', value:String(ids.length) },
+          { label:'Retention', value:`${DATA.retention_by_value_type?.[extra.type]?.toFixed ? DATA.retention_by_value_type[extra.type].toFixed(1) : DATA.retention_by_value_type?.[extra.type] || 0}%` }
+        ];
       } else {
-        rows = RAW.filter(r => r.value_type);
+        rows = sortRows(RAW.filter(r => r.value_type), 'asc');
       }
       break;
+    }
     case 'fa_first': {
       const base = filterRows(r => r.week_number===1);
+      cols = COLS_FEATURE;
       if(extra && extra.category){
         title=`Feature adoption — First Week · ${extra.category}`;
         sub=`Week 1 rows where ${extra.category} > 0`;
-        rows = filterByFeature(base, extra.category);
+        rows = sortRows(filterByFeature(base, extra.category), 'desc');
+        options.summaryCards = [
+          { label:'Feature', value:extra.category },
+          { label:'Week', value:'W1' },
+          { label:'Users', value:String(new Set(rows.map(r => r.user_id)).size) }
+        ];
       } else {
         title='Feature adoption — First Week';
         sub='Week 1 rows';
-        rows = base;
+        rows = sortRows(base, 'desc');
       }
       break;
     }
     case 'fa_last': {
       const base = filterRows(r => r.week_number===maxW);
+      cols = COLS_FEATURE;
       if(extra && extra.category){
         title=`Feature adoption — Last Week · ${extra.category}`;
         sub=`Week ${maxW} rows where ${extra.category} > 0`;
-        rows = filterByFeature(base, extra.category);
+        rows = sortRows(filterByFeature(base, extra.category), 'desc');
+        options.summaryCards = [
+          { label:'Feature', value:extra.category },
+          { label:'Week', value:`W${maxW}` },
+          { label:'Users', value:String(new Set(rows.map(r => r.user_id)).size) }
+        ];
       } else {
         title='Feature adoption — Last Week';
         sub=`Week ${maxW} rows`;
-        rows = base;
+        rows = sortRows(base, 'desc');
       }
       break;
     }
     case 'fa_all': {
       const base = filterRows(r => r.week_number>1);
+      cols = COLS_FEATURE;
       if(extra && extra.category){
         title=`Feature adoption — All Time · ${extra.category}`;
         sub=`Weeks > 1 where ${extra.category} > 0`;
-        rows = filterByFeature(base, extra.category);
+        rows = sortRows(filterByFeature(base, extra.category), 'desc');
+        options.summaryCards = [
+          { label:'Feature', value:extra.category },
+          { label:'Users', value:String(new Set(rows.map(r => r.user_id)).size) },
+          { label:'Rows', value:String(rows.length) }
+        ];
       } else {
         title='Feature adoption — All Time';
         sub='Weeks > 1';
-        rows = base;
+        rows = sortRows(base, 'desc');
       }
       break;
     }
-    case 'ttv_dist':
+    case 'ttv_dist': {
+      cols = [COLS[0], COLS[10], COLS[11], COLS[12], COLS[13], COLS[14]];
       if(extra && extra.bucket){
         title=`TTV distribution — ${extra.bucket}`;
         sub=`Users in ${extra.bucket}`;
         rows = filterRows(r => r.time_to_value_bucket===extra.bucket);
         const seen = new Set();
         rows = rows.filter(r => { if(seen.has(r.user_id)) return false; seen.add(r.user_id); return true; });
+        rows = rows.sort((a,b) => a.user_id.localeCompare(b.user_id));
+        options.summaryCards = [
+          { label:'Bucket', value:extra.bucket },
+          { label:'Users', value:String(rows.length) }
+        ];
       } else {
-        rows = RAW;
+        rows = sortRows(RAW, 'asc');
         title='TTV distribution — all rows';
       }
       break;
+    }
     case 'ttv_creation':
     case 'ttv_quality':
     case 'ttv_efficiency': {
       const vt = {ttv_creation:'Creation',ttv_quality:'Quality',ttv_efficiency:'Efficiency'}[kind];
+      cols = [COLS[0], COLS[1], COLS[10], COLS[11], COLS[12], COLS[13], COLS[14]];
       if(extra && extra.bucket){
         title=`TTV · ${vt} — ${extra.bucket}`;
         sub=`value_type=${vt}, bucket=${extra.bucket}`;
-        rows = filterRows(r => r.value_type===vt && r.time_to_value_bucket===extra.bucket);
+        rows = sortRows(filterRows(r => r.value_type===vt && r.time_to_value_bucket===extra.bucket), 'asc');
+        options.summaryCards = [
+          { label:'Value type', value:vt },
+          { label:'Bucket', value:extra.bucket },
+          { label:'Rows', value:String(rows.length) }
+        ];
       } else {
         title=`TTV · ${vt}`;
         sub=`value_type=${vt}`;
-        rows = filterRows(r => r.value_type===vt);
+        rows = sortRows(filterRows(r => r.value_type===vt), 'asc');
       }
       break;
     }
   }
-  openModal(title, sub, rows, COLS);
+  openModal(title, sub, rows, cols, options);
 }
 
 function initInfoTooltips(){
