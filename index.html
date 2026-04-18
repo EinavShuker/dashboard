@@ -421,7 +421,7 @@ function buildDataFromRecords(records) {
     return !!s && ((s.time_to_value_bucket === 'No Value') || (s.first_value_week > 2));
   });
 
-  const qgUsers = activeLatestIds.slice();
+  const qgUsers = USERS.slice();
   const perUser = {};
   qgUsers.forEach(u => {
     perUser[u] = WEEKS.map(w => {
