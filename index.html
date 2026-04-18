@@ -29,6 +29,11 @@
   .widget{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
   .widget h2{margin:0;background:var(--primary);color:#fff;padding:10px 14px;font-size:13px;font-weight:600;letter-spacing:.3px;display:flex;justify-content:space-between;align-items:center}
   .widget h2 .tag{background:var(--secondary);color:#e5e7eb;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.3px}
+  .widget h2 .h2-right{display:inline-flex;align-items:center;gap:8px}
+  .widget h2 .info-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:10px;font-weight:700;font-style:italic;font-family:Georgia,"Times New Roman",serif;cursor:help;user-select:none;transition:background .15s;line-height:1}
+  .widget h2 .info-icon:hover,.widget h2 .info-icon:focus{background:rgba(255,255,255,.3);outline:none}
+  .info-tooltip{position:fixed;z-index:10000;max-width:240px;background:#111827;color:#fff;padding:8px 10px;font-size:12px;line-height:1.45;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s ease,transform .12s ease;font-weight:400;letter-spacing:normal;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;white-space:normal;word-wrap:break-word}
+  .info-tooltip.visible{opacity:1;transform:translateY(0)}
   .widget .body{padding:14px;flex:1;min-height:0;cursor:pointer}
   .widget .body.nonclick{cursor:default}
   .kpi-number{font-size:44px;font-weight:700;line-height:1;color:var(--primary)}
@@ -90,7 +95,7 @@
 <main>
   <!-- 1. Active Users (KPI) -->
   <section class="widget w-4">
-    <h2><span><span class="order">01</span>&nbsp;&nbsp;Active Users</span><span class="tag">KPI</span></h2>
+    <h2><span><span class="order">01</span>&nbsp;&nbsp;Active Users</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of users actively using Leo in the latest week. A snapshot of current engagement and whether adoption is spreading inside the account.">i</span><span class="tag">KPI</span></span></h2>
     <div class="body" data-drill="active_users">
       <div class="kpi-number"><span id="kpiActive">—</span> / <span id="kpiTotal">—</span> = <span id="activePct">—</span>%</div>
       <div class="kpi-sub">Active users in latest week</div>
@@ -106,7 +111,7 @@
 
   <!-- 2. Account Health -->
   <section class="widget w-4">
-    <h2><span><span class="order">02</span>&nbsp;&nbsp;Account Health</span><span class="tag">TEXT</span></h2>
+    <h2><span><span class="order">02</span>&nbsp;&nbsp;Account Health</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Three at-a-glance risk signals: users with declining usage, users who rely heavily on Part Search without advanced features, and users who haven't reached value by Week 2.">i</span><span class="tag">TEXT</span></span></h2>
     <div class="body nonclick">
       <ul class="health-list">
         <li id="hDecl"  data-drill="health_declining"><span class="label">Declining usage vs last week</span><span class="count" id="hDeclCount">—</span></li>
@@ -119,65 +124,65 @@
 
   <!-- 3. Query Growth -->
   <section class="widget w-4">
-    <h2><span><span class="order">03</span>&nbsp;&nbsp;Query Growth</span><span class="tag">LINE</span></h2>
+    <h2><span><span class="order">03</span>&nbsp;&nbsp;Query Growth</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Week-over-week change in total queries. Positive = deepening usage; flat or negative = stalling engagement and a signal to intervene.">i</span><span class="tag">LINE</span></span></h2>
     <div class="body" data-drill="query_growth"><div class="chart-wrap"><canvas id="chartQueryGrowth"></canvas></div></div>
   </section>
 
   <!-- 4. Retention Curve -->
   <section class="widget w-6">
-    <h2><span><span class="order">04</span>&nbsp;&nbsp;Retention Curve</span><span class="tag">LINE</span></h2>
+    <h2><span><span class="order">04</span>&nbsp;&nbsp;Retention Curve</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Percent of users still active each week since onboarding. The shape shows where users fall off and where usage stabilizes into a habit.">i</span><span class="tag">LINE</span></span></h2>
     <div class="body" data-drill="retention_curve"><div class="chart-wrap"><canvas id="chartRetention"></canvas></div></div>
   </section>
 
   <!-- 5. Retention Drop-Off -->
   <section class="widget w-6">
-    <h2><span><span class="order">05</span>&nbsp;&nbsp;Retention Drop-Off</span><span class="tag">BAR</span></h2>
+    <h2><span><span class="order">05</span>&nbsp;&nbsp;Retention Drop-Off</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Users who went from active to inactive between consecutive weeks. Highlights the exact weeks where engagement breaks so CS can intervene.">i</span><span class="tag">BAR</span></span></h2>
     <div class="body" data-drill="churn"><div class="chart-wrap"><canvas id="chartChurn"></canvas></div></div>
   </section>
 
   <!-- 6. Retention by Value Type -->
   <section class="widget w-12">
-    <h2><span><span class="order">06</span>&nbsp;&nbsp;Retention by Value Type</span><span class="tag">H-BAR · 3 ROWS</span></h2>
+    <h2><span><span class="order">06</span>&nbsp;&nbsp;Retention by Value Type</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Retention rate broken down by the first value a user achieved — Creation, Quality, or Efficiency. Reveals which value paths produce sticky users.">i</span><span class="tag">H-BAR · 3 ROWS</span></span></h2>
     <div class="body" data-drill="ret_value"><div class="chart-wrap"><canvas id="chartRetValue"></canvas></div></div>
   </section>
 
   <!-- 7. Feature Adoption First Week -->
   <section class="widget w-4">
-    <h2><span><span class="order">07</span>&nbsp;&nbsp;Feature Adoption — First Week</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">07</span>&nbsp;&nbsp;Feature Adoption — First Week</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of queries by feature type during Week 1. Shows what users actually try first and where onboarding is steering them.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="fa_first"><div class="chart-wrap"><canvas id="chartFeatFirst"></canvas></div></div>
   </section>
 
   <!-- 8. Feature Adoption Last Week -->
   <section class="widget w-4">
-    <h2><span><span class="order">08</span>&nbsp;&nbsp;Feature Adoption — Last Week</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">08</span>&nbsp;&nbsp;Feature Adoption — Last Week</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Share of queries by feature type in the latest week. Compare to Week 1 to see whether users have progressed into deeper, higher-value features.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="fa_last"><div class="chart-wrap"><canvas id="chartFeatLast"></canvas></div></div>
   </section>
 
   <!-- 9. Feature Adoption All Time -->
   <section class="widget w-4">
-    <h2><span><span class="order">09</span>&nbsp;&nbsp;Feature Adoption — All Time</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">09</span>&nbsp;&nbsp;Feature Adoption — All Time</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Feature-mix across the full data window. The steady-state picture of how the account uses Leo overall.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="fa_all"><div class="chart-wrap"><canvas id="chartFeatAll"></canvas></div></div>
   </section>
 
   <!-- 10. TTV Distribution -->
   <section class="widget w-12">
-    <h2><span><span class="order">10</span>&nbsp;&nbsp;Time to Value Distribution</span><span class="tag">H-BAR · 5 BUCKETS</span></h2>
+    <h2><span><span class="order">10</span>&nbsp;&nbsp;Time to Value Distribution</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="How long users take to reach their first value event, bucketed (First Week, Week 2, Week 3, Later, No Value). Faster buckets correlate with retention.">i</span><span class="tag">H-BAR · 5 BUCKETS</span></span></h2>
     <div class="body" data-drill="ttv_dist"><div class="chart-wrap"><canvas id="chartTTVdist"></canvas></div></div>
   </section>
 
   <!-- 11. TTV Creation -->
   <section class="widget w-4">
-    <h2><span><span class="order">11</span>&nbsp;&nbsp;TTV — Creation</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">11</span>&nbsp;&nbsp;TTV — Creation</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution limited to users whose first value was Creation (e.g., CAD generation). Shows how fast creators get productive.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="ttv_creation"><div class="chart-wrap"><canvas id="chartTTVcreation"></canvas></div></div>
   </section>
   <!-- 12. TTV Quality -->
   <section class="widget w-4">
-    <h2><span><span class="order">12</span>&nbsp;&nbsp;TTV — Quality</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">12</span>&nbsp;&nbsp;TTV — Quality</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution for users whose first value was Quality (e.g., CAD inspection). Shows how fast quality-oriented users reach value.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="ttv_quality"><div class="chart-wrap"><canvas id="chartTTVquality"></canvas></div></div>
   </section>
   <!-- 13. TTV Efficiency -->
   <section class="widget w-4">
-    <h2><span><span class="order">13</span>&nbsp;&nbsp;TTV — Efficiency</span><span class="tag">H-BAR</span></h2>
+    <h2><span><span class="order">13</span>&nbsp;&nbsp;TTV — Efficiency</span><span class="h2-right"><span class="info-icon" tabindex="0" aria-label="Time-to-value distribution for users whose first value was Efficiency (e.g., Q&amp;A, Part Search). Shows how fast efficiency seekers reach value.">i</span><span class="tag">H-BAR</span></span></h2>
     <div class="body" data-drill="ttv_efficiency"><div class="chart-wrap"><canvas id="chartTTVefficiency"></canvas></div></div>
   </section>
 </main>
@@ -878,6 +883,40 @@ fetch('/api/data')
     console.warn('Using embedded fallback data. Reason:', err.message || err);
     bootFrom(LOCAL_FALLBACK.records);
   });
+</script>
+<script>
+(function(){
+  const tip = document.createElement('div');
+  tip.className = 'info-tooltip';
+  tip.setAttribute('role','tooltip');
+  document.body.appendChild(tip);
+  function position(el){
+    const r = el.getBoundingClientRect();
+    const tr = tip.getBoundingClientRect();
+    const margin = 8;
+    let top;
+    if (r.top > tr.height + margin + 4) top = r.top - tr.height - margin;
+    else top = r.bottom + margin;
+    let left = r.left + r.width/2 - tr.width/2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tr.width - 8));
+    tip.style.top = top + 'px';
+    tip.style.left = left + 'px';
+  }
+  function show(el){
+    const text = el.getAttribute('aria-label');
+    if (!text) return;
+    tip.textContent = text;
+    tip.classList.add('visible');
+    position(el);
+  }
+  function hide(){ tip.classList.remove('visible'); }
+  document.addEventListener('mouseover', e => { const icon = e.target.closest('.info-icon'); if (icon) show(icon); });
+  document.addEventListener('mouseout', e => { if (e.target.closest('.info-icon')) hide(); });
+  document.addEventListener('focusin', e => { const icon = e.target.closest('.info-icon'); if (icon) show(icon); });
+  document.addEventListener('focusout', e => { if (e.target.closest('.info-icon')) hide(); });
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('resize', hide);
+})();
 </script>
 </body>
 </html>
